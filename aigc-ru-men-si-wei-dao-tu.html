@@ -1,0 +1,1468 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>AIGC 入门思维导图</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <style>
+      button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2.25rem; }
+
+      :root {
+        --bg: #eef0f3;
+        --dot: #d3d8e0;
+        --surface: #ffffff;
+        --ink: #1c2330;
+        --ink-soft: #4a5468;
+        --bar-bg: rgba(255,255,255,.88);
+        --bar-border: #dde1e8;
+        --btn-bg: #ffffff;
+        --btn-border: #ccd2dd;
+        --btn-hover: #eef2f8;
+        --root-bg: #1d2534;
+        --root-ink: #f5f7fa;
+        --shadow: 0 2px 10px rgba(23,32,54,.10), 0 1px 3px rgba(23,32,54,.08);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #12151b;
+          --dot: #232936;
+          --surface: #1e242f;
+          --ink: #e8ecf3;
+          --ink-soft: #a5aec0;
+          --bar-bg: rgba(22,26,34,.9);
+          --bar-border: #2c3342;
+          --btn-bg: #232a37;
+          --btn-border: #39415455;
+          --btn-hover: #2b3345;
+          --root-bg: #e8ecf3;
+          --root-ink: #171c26;
+          --shadow: 0 2px 10px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.4);
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* ---------- toolbar ---------- */
+      .toolbar {
+        flex: 0 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 14px;
+        padding: 8px 12px;
+        background: var(--bar-bg);
+        border-bottom: 1px solid var(--bar-border);
+        backdrop-filter: blur(8px);
+        z-index: 20;
+      }
+      .tb-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .tb-group + .tb-group { margin-left: auto; }
+      .tb-label { font-size: 12px; color: var(--ink-soft); margin-right: 2px; white-space: nowrap; }
+      .toolbar button {
+        font: inherit;
+        font-size: 13.5px;
+        font-weight: 500;
+        color: var(--ink);
+        background: var(--btn-bg);
+        border: 1px solid var(--btn-border);
+        border-radius: 8px;
+        padding: 6px 12px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .toolbar button:hover { background: var(--btn-hover); }
+      .toolbar button:active { transform: translateY(1px); }
+      .toolbar button:focus-visible { outline: 2px solid #4c8dff; outline-offset: 1px; }
+      .zoom-label { font-size: 13px; color: var(--ink-soft); min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+      .zoom-btn { width: 38px; padding: 6px 0 !important; font-size: 16px !important; }
+
+      /* ---------- viewport / world ---------- */
+      #viewport {
+        flex: 1 1 auto;
+        position: relative;
+        overflow: hidden;
+        background-image: radial-gradient(circle, var(--dot) 1.1px, transparent 1.2px);
+        background-size: 26px 26px;
+        cursor: grab;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      #viewport.dragging { cursor: grabbing; }
+      #world {
+        position: absolute;
+        left: 0; top: 0;
+        transform-origin: 0 0;
+        will-change: transform;
+      }
+      #edges { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+      #edges path { fill: none; stroke-linecap: round; }
+
+      /* ---------- nodes ---------- */
+      .node {
+        position: absolute;
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        line-height: 1.45;
+        word-break: break-word;
+      }
+      .node .txt { flex: 1 1 auto; }
+      .node.has-kids { cursor: pointer; }
+      .node.has-kids:focus-visible { outline: 2px solid #4c8dff; outline-offset: 2px; }
+      .node .toggle {
+        flex: 0 0 auto;
+        width: 22px; height: 22px;
+        margin-top: 1px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 700; line-height: 1;
+        pointer-events: none;
+      }
+      .node.root {
+        background: var(--root-bg);
+        color: var(--root-ink);
+        font-size: 25px;
+        font-weight: 900;
+        letter-spacing: .06em;
+        padding: 18px 26px;
+        border-radius: 16px;
+        max-width: 300px;
+        text-align: center;
+        justify-content: center;
+      }
+      .node.root .sub {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 500;
+        letter-spacing: .14em;
+        opacity: .62;
+        margin-top: 5px;
+      }
+      .node.d1 {
+        background: var(--c);
+        color: #fff;
+        font-size: 17.5px;
+        font-weight: 700;
+        padding: 11px 14px;
+        border-radius: 12px;
+        max-width: 250px;
+      }
+      .node.d1 .num {
+        flex: 0 0 auto;
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        background: rgba(255,255,255,.24);
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 900;
+        margin-top: 1px;
+      }
+      .node.d1 .toggle { background: rgba(255,255,255,.26); color: #fff; }
+      .node.d2 {
+        background: color-mix(in srgb, var(--c) 13%, var(--surface));
+        border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
+        color: var(--ink);
+        font-size: 14.5px;
+        font-weight: 500;
+        padding: 8px 11px;
+        max-width: 248px;
+      }
+      .node.d2 .toggle { background: color-mix(in srgb, var(--c) 20%, var(--surface)); color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); }
+      .node.d3 {
+        background: var(--surface);
+        border: 1px solid color-mix(in srgb, var(--c) 38%, transparent);
+        color: var(--ink-soft);
+        font-size: 13.5px;
+        font-weight: 400;
+        padding: 6px 10px;
+        max-width: 224px;
+        box-shadow: 0 1px 4px rgba(23,32,54,.07);
+      }
+      .node.d3 .toggle { background: var(--btn-hover); color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 40%, transparent); }
+      .node b, .node strong { font-weight: 700; color: inherit; }
+      .node .tag {
+        display: inline-block;
+        font-size: 11px; font-weight: 700;
+        padding: 0 6px;
+        border-radius: 99px;
+        background: color-mix(in srgb, var(--c) 18%, transparent);
+        color: var(--c);
+        margin-left: 5px;
+        vertical-align: 1px;
+        white-space: nowrap;
+      }
+
+      /* ---------- hint bar ---------- */
+      .hint {
+        flex: 0 0 auto;
+        padding: 7px 14px;
+        font-size: 12.5px;
+        color: var(--ink-soft);
+        background: var(--bar-bg);
+        border-top: 1px solid var(--bar-border);
+        text-align: center;
+      }
+      .hint b { color: var(--ink); font-weight: 600; }
+      @media (max-width: 640px) {
+        .node.root { font-size: 21px; padding: 14px 20px; }
+        .node.d1 { font-size: 16px; }
+        .tb-label { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="toolbar" role="toolbar" aria-label="思维导图控制">
+      <div class="tb-group">
+        <span class="tb-label">展开</span>
+        <button type="button" id="btnAll">全部展开</button>
+        <button type="button" id="btnL2">展开到二级</button>
+        <button type="button" id="btnL1">只看分支</button>
+      </div>
+      <div class="tb-group">
+        <button type="button" class="zoom-btn" id="btnOut" aria-label="缩小">−</button>
+        <span class="zoom-label" id="zoomLabel">100%</span>
+        <button type="button" class="zoom-btn" id="btnIn" aria-label="放大">＋</button>
+        <button type="button" id="btnFit">适应屏幕</button>
+        <button type="button" id="btnFull">全屏讲课</button>
+      </div>
+    </div>
+
+    <div id="viewport">
+      <div id="world">
+        <svg id="edges" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="nodes"></div>
+      </div>
+    </div>
+
+    <div class="hint">学习顺序：从 <b>第 1 支</b> 学到 <b>第 10 支</b>，每支末尾都有 <b>动手任务</b> 和 <b>过关标准</b>，过关再往下走 · 操作：<b>拖动</b>平移 · <b>滚轮 / 双指</b>缩放 · 点击带 <b>＋ / −</b> 的节点展开、折叠</div>
+
+    <script>
+    (function () {
+      "use strict";
+
+      /* ================= 数据：中心 + 10 大分支（完整教程版） ================= */
+      var DATA = {
+        text: "AIGC 入门地图",
+        sub: "零基础跟着学 · 做出第一条完整短片",
+        children: [
+          { text: "先认识 AIGC", color: "#e8590c", children: [
+            { text: "学什么", children: [
+              { text: "先搞清 AIGC 到底是什么、能干什么、干活方式和传统制作差在哪，再动手" }
+            ]},
+            { text: "核心讲解", children: [
+              { text: "AIGC = 用 AI 生成内容，五种形态：文本 / 图像 / 视频 / 音频 / 3D" },
+              { text: "本课主攻图像 + 视频，声音在第 7 支「完整制作流程」里一起讲" },
+              { text: "和传统制作的区别", children: [
+                { text: "传统：拍下来 / 画出来" },
+                { text: "AIGC：描述出来，再抽出来" },
+                { text: "核心技能 = 描述能力 + 挑选眼光" }
+              ]},
+              { text: "能做的方向", children: [
+                { text: "AI 短剧 / 短片" },
+                { text: "电商广告图与带货视频" },
+                { text: "自媒体账号内容" },
+                { text: "数字人口播" },
+                { text: "MV 与视觉实验" }
+              ]},
+              { text: "心态三条（贯穿全程）", children: [
+                { text: "AI 是抽卡：一条镜头抽 5–20 次很正常，比的是谁会挑、会改" },
+                { text: "人是导演：画面不对，先想「我的描述哪里没说清」，而不是怪模型笨" },
+                { text: "先完成，再完美：先跑通全流程，细节在第二条、第三条里补" }
+              ]}
+            ]},
+            { text: "动手任务", children: [
+              { text: "打开小云雀，用「智能生视频」输一句话主题（如「一只猫在清晨的渔市巡逻」），生成第一条 AI 视频" }
+            ]},
+            { text: "过关标准", children: [
+              { text: "能说清 T2V（文生视频）和 I+T2V（图+文生视频）的区别" },
+              { text: "能说清「抽卡、导演、挑选」为什么是核心技能" }
+            ]}
+          ]},
+          { text: "工具地图", color: "#1971c2", children: [
+            { text: "学什么", children: [
+              { text: "认识主流平台各自的特色工具，学会「要干这件事，该打开哪个平台」" }
+            ]},
+            { text: "核心讲解", children: [
+              { text: "工具分两大类", children: [
+                { text: "闭源平台：打开网页就能用，按积分 / 会员收费，上手快" },
+                { text: "开源工具：以 ComfyUI 为代表，装在自己电脑上，免费但难学、可控性最强" }
+              ]},
+              { text: "选工具看四个维度", children: [
+                { text: "预算（免费额度够不够）" },
+                { text: "自由度（能调的参数多不多）" },
+                { text: "可控性（能不能精确控制画面）" },
+                { text: "商用授权（免费版大多不带，正式接活前必须确认）" }
+              ]},
+              { text: "成本概念", children: [
+                { text: "闭源平台按积分计费，生成视频最烧积分" },
+                { text: "省钱法则：先低清、短时长试方向，定稿再出高清长版" },
+                { text: "何时上本地 ComfyUI：高频出图、要批量复用同一套流程、或闭源平台控制力不够用" }
+              ]}
+            ]},
+            { text: "各平台特色工具速览", children: [
+              { text: "即梦（逐镜精修）", children: [
+                { text: "首尾帧：锁定镜头起止画面" },
+                { text: "智能画布：局部重绘 / 扩图 / 消除" },
+                { text: "数字人对口型" },
+                { text: "视频局部重拍" },
+                { text: "说明注释", children: [
+                  { text: "特色工具", children: [
+                    { text: "首尾帧——同时指定第一帧和最后一帧，模型补中间运动，起幅落幅都锁死，做转场和定格收尾特别好用" },
+                    { text: "智能画布——图片多图层编辑台，局部重绘（圈哪改哪）、一键扩图、图像消除、抠图不用跳 PS" },
+                    { text: "运镜控制 + 速度调节——提示词之外直接选推拉摇移，比纯文字稳" },
+                    { text: "数字人/对口型——人物图 + 台词（选音色）或音频自动对口型，另有动作模仿" },
+                    { text: "视频局部重拍——成片某块不满意只重拍那块" },
+                    { text: "原生音画同步——Seedance 2.0 起生成时同步出环境音、配乐和人声" },
+                    { text: "Agent 模式——想法/剧本/参考图交给它自动创作，先出样再精修" }
+                  ]},
+                  { text: "使用方法（图生视频含首尾帧，主练流程）", children: [
+                    { text: "①顶部选「视频生成」→「图生视频」" },
+                    { text: "②上传首帧图，想锁结尾再加尾帧图" },
+                    { text: "③提示词写主体动作 + 镜头运动 + 时长感" },
+                    { text: "④选模型（Seedance 2.0/2.5）、比例、时长、清晰度，先低清短时长跑一版" },
+                    { text: "⑤局部不对用局部重拍只改那块，整体不对改词重抽" },
+                    { text: "⑥满意后下载（免费版带水印）" },
+                    { text: "注意：平台会拦截写实真人脸部素材" }
+                  ]}
+                ]}
+              ]},
+              { text: "小云雀（出片最快）", children: [
+                { text: "智能生视频：一句话出成片" },
+                { text: "短剧 Agent：剧本直出剧集" },
+                { text: "爆款复刻：粘贴链接学结构" },
+                { text: "注意：与即梦共用模型，但账号积分不互通" },
+                { text: "说明注释", children: [
+                  { text: "特色工具", children: [
+                    { text: "智能生视频——输入一句主题，Agent 自动写脚本、拆分镜、生成素材、剪辑包装，直出 15–60 秒成片，全课门槛最低" },
+                    { text: "短剧 Agent——上传或粘贴剧本（最长 10 万字），自动解析角色场景、按集拆分镜逐集生成" },
+                    { text: "爆款复刻——粘贴抖音/小红书链接，拆解原片镜头逻辑、节奏、画风、BGM，生成同款结构新片" },
+                    { text: "沉浸式短片——单条生成模式，提示词里用 @ 引用素材（最多 9 张图）" },
+                    { text: "照片会说话/数字人口播" },
+                    { text: "视频续写——向后延长续接" }
+                  ]},
+                  { text: "使用方法（智能生视频）", children: [
+                    { text: "①登录先领当日免费积分（当日清零别囤）→「新建项目」" },
+                    { text: "②选「智能生视频」，输入一句主题，确认 Agent 给的脚本与分镜方向" },
+                    { text: "③等成片生成，不满意的片段局部重拍或续写" },
+                    { text: "④下载导出（免费版带水印）" },
+                    { text: "短剧 Agent 关键检查点：生成全剧角色、场景两步先查对，角色定错后面全错" }
+                  ]}
+                ]}
+              ]},
+              { text: "TapNow（一个画布跑全程）", children: [
+                { text: "Tapflow 节点画布：把分镜表变成可执行流程图" },
+                { text: "Draft 草稿模式：480p 先试方向再出正式版" },
+                { text: "Retake：换机位重拍" },
+                { text: "Agent 代劳" },
+                { text: "说明注释", children: [
+                  { text: "特色工具", children: [
+                    { text: "Tapflow 节点画布——文本、图像、视频、音频都是节点，下游提示词里用 @ 引用上游素材，等于把分镜表变成可执行流程图，最对编导胃口" },
+                    { text: "Agent——选中节点用自然语言交代任务，Ask 模式生成前先弹确认卡核对，不乱烧积分" },
+                    { text: "Draft 草稿模式——先出 480p 草稿验证运镜构图，满意后一键出 1080p 正式版，全平台最省钱的试错机制" },
+                    { text: "全能参考——Seedance 2.5 可一次喂 30 图 + 10 视频 + 10 音频" },
+                    { text: "视频后处理工具栏——Trim 裁剪、Replace/Remove 物体、Continue 续拍、Retake 换机位重拍、截帧成图" },
+                    { text: "多模型同画布——Seedance、Kling、Veo、Sora 等几十个模型一块画布切换" }
+                  ]},
+                  { text: "使用方法（一张产品图 → 一段短视频）", children: [
+                    { text: "①新建画布，Upload 产品图成图像节点" },
+                    { text: "②建文本节点写指令" },
+                    { text: "③Shift 同选两节点，从选区 + 拉出新图像节点（确认两条输入连线）" },
+                    { text: "④选模型设参数出场景图" },
+                    { text: "⑤结果图节点拉出视频节点（或 @ 引用为首帧）" },
+                    { text: "⑥视频提示词先主体动作再镜头运动，一个片段只写一个主要动作" },
+                    { text: "⑦先开 Draft 出 480p 草稿查运镜和一致性" },
+                    { text: "⑧满意后 Generate Final Video 出正式版，工具栏裁剪截帧微调后下载" }
+                  ]}
+                ]}
+              ]},
+              { text: "Lovart（交一整套设计）", children: [
+                { text: "设计智能体 Arti：一句话交一整套设计物料" },
+                { text: "Brand Kit：锁定品牌色 / 字体 / Logo" },
+                { text: "Mark 圈选精修：改局部不用重抽" },
+                { text: "说明注释", children: [
+                  { text: "特色工具", children: [
+                    { text: "设计智能体 Arti——一句话需求自动拆任务、在 30+ 模型间选模型，一次产出一整套风格统一的物料（Logo、海报、社媒图、包装）" },
+                    { text: "ChatCanvas 无限画布——产物同画布可选中可编辑" },
+                    { text: "Brand Kit——上传 Logo、设定品牌色字体，之后默认套用（付费功能）" },
+                    { text: "Mark 圈选精修——圈住一处精确改，还能改图内文字、拆图层、移物体、扩图、换角度、高清放大，改稿不用整张重抽" },
+                    { text: "Quickstart 预设项目——点开即生成，不用自己写提示词" },
+                    { text: "图生视频——带声音" },
+                    { text: "批量导出——支持 PSD" }
+                  ]},
+                  { text: "使用方法（做一张活动海报）", children: [
+                    { text: "①New Project 开画布（或点 Quickstart 海报预设跳过写词）" },
+                    { text: "②自然语言写清主题、尺寸、主标题文字、风格、配色" },
+                    { text: "③等智能体生成方案挑选" },
+                    { text: "④改稿三招：打字让 Agent 改 / 工具栏一键预设 / Mark 圈选局部改" },
+                    { text: "⑤想动起来就选中图让 Agent 生成 5 秒视频版" },
+                    { text: "⑥定稿导出，多张可框选批量导出" },
+                    { text: "注意：免费版无商用授权，正式商用物料必须升付费档" }
+                  ]}
+                ]}
+              ]},
+              { text: "LiblibAI（找风格、练模型）", children: [
+                { text: "10 万+ 模型 / LoRA 库" },
+                { text: "一键同款：套用社区作品的模型参数" },
+                { text: "在线 LoRA 训练" },
+                { text: "说明注释", children: [
+                  { text: "特色工具", children: [
+                    { text: "10 万+ 模型/LoRA 库——Checkpoint、LoRA、ControlNet 全有，国内找特定风格第一站" },
+                    { text: "一键同款——社区作品直接套用其模型参数生成，不用猜调法" },
+                    { text: "双界面在线生图——WebUI 和 ComfyUI 都在云端跑" },
+                    { text: "在线 LoRA 训练——上传 10–30 张图训专属 LoRA（底模可选 SD1.5、SDXL、Flux），一致性课的核心工具" },
+                    { text: "模型可下载——回本地用" },
+                    { text: "顶尖模型一键调用——Seedance、可灵、Seedream、MiniMax H3 等入口整合" }
+                  ]},
+                  { text: "使用方法（用 LoRA 在线生图）", children: [
+                    { text: "①登录领当日免费算力（每日 300 点）" },
+                    { text: "②模型广场搜风格 LoRA，详情页先看示例图、作者推荐底模、推荐权重" },
+                    { text: "③点「在线生成」进 WebUI，LoRA 自动挂载" },
+                    { text: "④底模必须选作者推荐的——选错底模是效果差头号原因" },
+                    { text: "⑤正向词写画面描述并带上 LoRA 触发词" },
+                    { text: "⑥权重先用推荐值（常见 0.6–0.8）、步数 20–30、先出 4 张抽卡" },
+                    { text: "⑦挑中后图生图/高清修复放大或下载，小图定稿再开高清" },
+                    { text: "注意：社区模型商用授权逐个看作者说明" }
+                  ]}
+                ]}
+              ]},
+              { text: "LibTV（剧本到成片一条龙）", children: [
+                { text: "TV Director：剧本自动拆分镜" },
+                { text: "角色造型室：全片角色统一管理" },
+                { text: "3D-BOX 虚拟影棚：搭场景、规划运镜" },
+                { text: "说明注释", children: [
+                  { text: "特色工具", children: [
+                    { text: "无限画布 + 非破坏性节点——每次编辑都衍生新节点不覆盖原素材，改错随时回溯" },
+                    { text: "TV Director——按题材/受众/人设生成剧本大纲与分集剧本，「导演执导」一键拆成整集分镜节点，先出文本分镜表确认再生成画面，省积分" },
+                    { text: "角色造型室——全片角色集中管理，发型五官服装定点修改" },
+                    { text: "3D-BOX 虚拟影棚——自然语言搭三维场景、规划镜头轨迹，独门工具" },
+                    { text: "人 + Agent 双入口——还开放 OpenAPI 与官方 Skills 包" },
+                    { text: "多模型聚合——30+ 模型同画布切换" },
+                    { text: "真人模式/角色替换——注意肖像权" }
+                  ]},
+                  { text: "使用方法（做一条剧情短片）", children: [
+                    { text: "①新建画布" },
+                    { text: "②Agent 入口选「剧本创编-原创剧本」，填题材/人设/背景，先生成大纲确认、再生成剧本" },
+                    { text: "③切「导演执导」先出文本版分镜表确认，再生成分镜节点" },
+                    { text: "④角色造型室定角色并锁定全片形象" },
+                    { text: "⑤分镜批量生图，不满意单张重绘" },
+                    { text: "⑥分镜图逐张连视频节点做图生视频，逐镜生成逐镜查衔接，别一次性批量跑" },
+                    { text: "⑦合成节点拼片段，音频节点补配音配乐" },
+                    { text: "⑧预览导出" },
+                    { text: "省钱纪律：先便宜模型低分辨率试镜，定稿再上贵模型" },
+                    { text: "产品 2026 年 3 月才上线、迭代极快，界面隔月可能变" }
+                  ]}
+                ]}
+              ]},
+              { text: "RunningHub（云端 ComfyUI）", children: [
+                { text: "工作流广场：10 万+ 现成工作流复制就能跑" },
+                { text: "AI 应用一键运行：只填图和词、不碰节点" },
+                { text: "没好显卡也能学工作流" },
+                { text: "说明注释", children: [
+                  { text: "特色工具", children: [
+                    { text: "云端 ComfyUI——节点工作流搬上云，预装节点和模型，免本地部署、免缺节点报红" },
+                    { text: "工作流广场——10 万+ 社区工作流，搜到复制到「我的工作流」直接改" },
+                    { text: "AI 应用一键运行——工作流封装成表单，只填图和词不碰节点，新手过渡神器" },
+                    { text: "Runow 快捷创作——选模型一句话生成" },
+                    { text: "RHSTORY——AI 短剧/漫剧一站式" },
+                    { text: "按秒计费——编辑免费，只在运行时按 GPU 时长扣 RH 币" }
+                  ]},
+                  { text: "使用方法（跑一个现成工作流/应用）", children: [
+                    { text: "①注册领新用户礼包和当日 100 RH 币（24 小时有效）" },
+                    { text: "②工作流市场搜想要的能力，看示例效果和运行消耗" },
+                    { text: "③「复制到我的工作流」（应用页点「立即创作」）" },
+                    { text: "④应用模式按表单传图填词、选运行模式（Lite 便宜 / Standard、Plus 更快）运行" },
+                    { text: "⑤工作流模式只找上传图节点和提示词节点换成自己的，其他先别动，点运行" },
+                    { text: "⑥结果预览下载，不满意改词或种子再跑（每次按时长扣币）" },
+                    { text: "⑦跑通后再逐个节点研究，改一处跑一次" },
+                    { text: "注意：会员分跑工作流的「币多多」和用闭源大模型的「钱多多」两种包，别选错，会员币 31 天过期" }
+                  ]}
+                ]}
+              ]},
+              { text: "ComfyUI（开源天花板）", children: [
+                { text: "节点式工作流，控制力天花板" },
+                { text: "本地免费、离线可用" },
+                { text: "第 3、6 支的进阶内容都通向它" },
+                { text: "说明注释", children: [
+                  { text: "特色工具", children: [
+                    { text: "节点式工作流——加载模型、提示词、采样、解码每步都是节点，管线透明可改，ControlNet 控图、LoRA 叠加、多阶段管线、局部重绘都能自己搭" },
+                    { text: "工作流随图复用——生成的 PNG 自带完整工作流元数据，拖回画布即还原，看到别人的图拖进来就能学搭法" },
+                    { text: "生态扩展——5000+ 社区扩展，ComfyUI-Manager 一键装节点包" },
+                    { text: "完全离线——素材不出本机，也能 API 调用做批量自动化" },
+                    { text: "全品类——图、视频（Wan、LTX）、音频、3D" }
+                  ]},
+                  { text: "使用方法（安装 + 第一个文生图）", children: [
+                    { text: "安装三选一，新手选桌面版：comfy.org/download 下载 Comfy Desktop，首次启动选「本地运行」；只从官网和官方 GitHub 下载，别用来路不明的整合包" },
+                    { text: "下 SD1.5 模型放进 models/checkpoints（模型按类型放对文件夹：LoRA 放 loras、VAE 放 vae，放错找不到；软件开着按 R 刷新）" },
+                    { text: "搭 7 个节点：Load Checkpoint（出 MODEL/CLIP/VAE 三路）→ 两个 CLIP Text Encode（正向/负向词）→ Empty Latent Image 512×512 → KSampler（先默认 steps 20、cfg 8.0）→ VAE Decode → Save Image" },
+                    { text: "点 Run 出图" },
+                    { text: "硬件口径：官方没有统一最低显存数字，取决于模型；经验上 SDXL/Flux 约 12G 显存起步、视频模型更吃，没显卡先用 RunningHub 过渡" }
+                  ]}
+                ]}
+              ]}
+            ]},
+            { text: "动手任务", children: [
+              { text: "同一画面（如雨夜便利店门口的女孩）在即梦和 Liblib 各出一张图，对比操作方式与结果风格，记下差别" }
+            ]},
+            { text: "过关标准", children: [
+              { text: "给 3 个需求（口播 / 电商图 / 剧情短片），能立刻选对平台和功能并说出理由" }
+            ]}
+          ]},
+          { text: "生成方式大全", color: "#2b8a3e", children: [
+            { text: "学什么", children: [
+              { text: "把「从无到有变出画面」的所有方式认全，知道每种什么时候用——这一支是后面所有操作的菜单" }
+            ]},
+            { text: "图像侧", children: [
+              { text: "文生图 T2I", children: [
+                { text: "只给文字出图" },
+                { text: "用途：定妆图 / 分镜图 / 海报底图，第一步永远从这里开始" }
+              ]},
+              { text: "图生图 I2I", children: [
+                { text: "一张图 + 文字，换风格 / 换细节" },
+                { text: "用途：草图变精图、照片变动漫风" }
+              ]},
+              { text: "局部重绘 Inpainting", children: [
+                { text: "涂抹圈出要改的区域，只重画那一块" },
+                { text: "用途：改表情、换衣服、修崩掉的手" }
+              ]},
+              { text: "扩图 Outpainting", children: [
+                { text: "往画面外补内容" },
+                { text: "用途：改画幅（竖图变横图）、补全被裁的场景" }
+              ]},
+              { text: "ControlNet 控图", children: [
+                { text: "用姿势图 / 线稿 / 深度图锁住构图和动作，模型只负责填内容" },
+                { text: "用途：让人物摆出指定姿势、保持构图不变换风格" },
+                { text: "ComfyUI 里的核心玩法，闭源平台多以「参考图」形式简化提供" }
+              ]},
+              { text: "高清放大 Upscale", children: [
+                { text: "小图放大到可用尺寸并补细节" },
+                { text: "用途：出图最后一步，交付前必做" }
+              ]}
+            ]},
+            { text: "视频侧", children: [
+              { text: "图+文生视频 I+T2V", tag: "最常用", children: [
+                { text: "图定画面、文字定动作和运镜" },
+                { text: "先出定妆图 / 分镜图，再配动作与运镜描述逐镜生成" },
+                { text: "画面可控、动得准，本课后面所有实战默认都是这一种" }
+              ]},
+              { text: "文生视频 T2V", children: [
+                { text: "只给文字出视频，快但画面不可控" },
+                { text: "适合空镜、氛围镜头" }
+              ]},
+              { text: "图生视频 I2V", children: [
+                { text: "只给一张图让它动起来，不配文字也能跑" },
+                { text: "动作等于开盲盒——它是 I+T2V 的基础形态，实战中很少单独用" }
+              ]},
+              { text: "首尾帧", children: [
+                { text: "首帧 + 尾帧两张图锁死起止，模型补中间运动" },
+                { text: "用途：精确转场、定格收尾、产品展示" }
+              ]},
+              { text: "参考生视频", children: [
+                { text: "给人物 / 风格参考，让新镜头保持同一张脸、同一种画风（各平台叫法不同：全能参考、主体参考等）" },
+                { text: "一致性的主力工具，见第 6 支" }
+              ]},
+              { text: "视频生视频 V2V", children: [
+                { text: "真人视频转动漫 / 换风格" },
+                { text: "用途：实拍素材风格化" }
+              ]},
+              { text: "视频延长 / 续写", children: [
+                { text: "在成片尾巴上继续生成" },
+                { text: "用途：镜头不够长时接一段" }
+              ]},
+              { text: "运镜控制", children: [
+                { text: "推、拉、摇、移、跟随、环绕" },
+                { text: "有的平台有专门按钮，有的写进提示词（见第 5 支）" }
+              ]},
+              { text: "动作迁移", children: [
+                { text: "让图里的人物照着一段参考视频的动作动" },
+                { text: "用途：跳舞、打斗等复杂动作" }
+              ]},
+              { text: "口型驱动", children: [
+                { text: "图 + 音频 / 台词 → 人物开口说话" },
+                { text: "用途：口播、数字人（声音见第 7 支）" }
+              ]}
+            ]},
+            { text: "选择口诀", children: [
+              { text: "要可控 → 图+文（I+T2V）" },
+              { text: "要快 → T2V 或 Agent 一句话" },
+              { text: "要转场精确 → 首尾帧" },
+              { text: "要同一个人 → 参考生视频" }
+            ]},
+            { text: "动手任务", children: [
+              { text: "拿一张定妆图（可用第 1 支里生成满意的画面），分别用 I+T2V 和首尾帧各做一条 5 秒视频，对比哪种结尾更可控" }
+            ]},
+            { text: "过关标准", children: [
+              { text: "给一个镜头需求，能选对生成方式并说出为什么" }
+            ]}
+          ]},
+          { text: "Prompt 写法", color: "#c2255c", children: [
+            { text: "学什么", children: [
+              { text: "写出能稳定复现画面的提示词——这是全课最核心的硬技能" }
+            ]},
+            { text: "万能公式", children: [
+              { text: "主体 + 动作 + 环境场景" },
+              { text: "+ 镜头语言 + 光影氛围" },
+              { text: "+ 风格 + 画质词（参数分通用与 SD 专属，见下方参数组）" },
+              { text: "公式示例", children: [
+                { text: "一位穿红衣的古代女子（主体）撑伞走过（动作）积雪的石桥（环境）" },
+                { text: "中景，背影（镜头），黄昏逆光、半脸暖光（光影）" },
+                { text: "国风写实（风格），电影质感、高清（画质）" }
+              ]}
+            ]},
+            { text: "镜头语言词库", children: [
+              { text: "景别：大特写 / 特写 / 近景 / 中景 / 全景 / 远景" },
+              { text: "角度：平拍 / 俯拍 / 仰拍 / 荷兰角（倾斜）" },
+              { text: "运镜：推近 / 拉远 / 横摇 / 跟随 / 环绕 / 手持晃动 / 固定机位" },
+              { text: "光影：逆光 / 侧光 / 顶光 / 黄昏暖光 / 冷色调 / 霓虹光" },
+              { text: "构图：居中 / 三分法 / 对称 / 前景遮挡" }
+            ]},
+            { text: "参数：平台通用 vs SD 生态专属", children: [
+              { text: "各平台都有的设置", children: [
+                { text: "画面比例 / 尺寸、时长、清晰度、一次生成数量、运镜选项" },
+                { text: "都在生成按钮附近，先用默认，熟悉了再动" }
+              ]},
+              { text: "负向提示词", children: [
+                { text: "写「不要什么」：多手指、变形、文字、水印、低画质" },
+                { text: "SD 生态（ComfyUI、Liblib 的 WebUI）有专门的负向输入框" },
+                { text: "闭源平台大多没有独立负向框，靠在正向描述里规避，有就用、没有别硬找" }
+              ]},
+              { text: "Seed 与 CFG（SD 生态专属）", children: [
+                { text: "只出现在 ComfyUI、Liblib 的 WebUI、RunningHub 的工作流里；即梦、小云雀、TapNow、Lovart 等闭源平台不向用户开放，找不到是正常的" },
+                { text: "Seed：同一个种子 + 同一组参数 = 可复现的结果；抽到满意先记下种子，再在它基础上微调，别从零重抽" },
+                { text: "CFG：越高越听提示词的话，但太高画面会僵硬；先用默认值，只在「不听话」时小幅上调" },
+                { text: "采样步数、采样器同理，也是 SD 生态的概念" }
+              ]}
+            ]},
+            { text: "改词方法（比写词更重要）", children: [
+              { text: "一次只改一个变量：这版只改运镜，其他不动——否则你不知道是哪句话起了作用" },
+              { text: "先结构后细节：先把景别、构图、主体位置定对，再调光影和风格词" },
+              { text: "模型「听不懂」抽象词：把「高级感」「氛围感」翻译成具体的光影、色彩、材质描述" }
+            ]},
+            { text: "Prompt 生成 Skills", children: [
+              { text: "手写是基本功，上面的公式必须先会；Skills 是加速器——装进 Claude Code 等 Agent 工具后，给它一句想法，它按成熟框架产出结构化提示词" },
+              { text: "以下均已逐个核实（star 数为 2026-11-17 GitHub 页面数据）" },
+              { text: "视频类", children: [
+                { text: "Seedance Prompt Skill（songguoxs）", children: [
+                  { text: "中文 Seedance 2.0（即梦）提示词生成器——十大生成模式（一镜到底、分镜动画、音乐卡点等）、镜头语言词库、按秒时间戳分镜、@图片/@视频/@音频 多模态引用，输出可直接粘贴进即梦" },
+                  { text: "3,012 star" },
+                  { text: "与本课主平台完全对口，首选" }
+                ]},
+                { text: "ai-shortfilm-prompts（jnMetaCode）", children: [
+                  { text: "把一个想法变成电影级多镜头视频提示词，适配 Sora、Kling、Veo、Seedance；五段式提示词结构 + 21 个题材模板 + 负向提示词，另附免安装的在线 prompt builder，有中文版 README" },
+                  { text: "543 star" },
+                  { text: "重方法，不只是给模板" }
+                ]},
+                { text: "Cinematic Video Prompt Skill（Rylaispirit）", children: [
+                  { text: "给 AI 装上专业摄影词汇库——700+ 术语（机位、运镜、布光、构图、调色），按「景别+主体+动作+场景+光线+运镜+风格+情绪+技术」公式为 Veo 3、Kling、Sora、Runway 等生成提示词" },
+                  { text: "194 star" },
+                  { text: "是第 5 支的现成词库，仓库较新（2026-09 创建）" }
+                ]},
+                { text: "AI Video Generator — 10 Seedance Skills（rediumvex）", children: [
+                  { text: "一套 10 个技能，为 Seedance 2.0 按场景生成营销向提示词：爆款钩子、SaaS 发布、个人品牌、无脸频道、奢华美学、前后对比等，每条含逐秒时间线、运镜、布光和声音设计" },
+                  { text: "487 star" },
+                  { text: "偏商业 / 自媒体场景" }
+                ]}
+              ]},
+              { text: "图像类", children: [
+                { text: "Image Generation（claude-office-skills）", children: [
+                  { text: "只写提示词、不直接生图——按 [主体+动作+环境+风格+技术参数] 框架，为 DALL·E、Midjourney、Stable Diffusion 分别生成适配各平台语法的图像提示词" },
+                  { text: "仓库 581 star，技能在 Claude Market 显示 5,762 次安装" },
+                  { text: "结构最像教材，适合当图像 Prompt 的第一课" }
+                ]}
+              ]},
+              { text: "反推类（看图学 Prompt）", children: [
+                { text: "Image Prompt Reverse（LunarXuan）", children: [
+                  { text: "上传一张图，从用途、媒介、主体、构图、镜头语言、光影、色彩、材质、情绪、后期风格等维度拆解，输出 450–700 字中文正向提示词 + 英文版 + 10–15 条负向词，可直接喂给 MJ/SD/Flux/即梦" },
+                  { text: "918 star" },
+                  { text: "它的拆图维度本身就是一堂提示词课" }
+                ]},
+                { text: "image-prompt-reverse（luozhilzh）", children: [
+                  { text: "同为看图反推，输出「还原版 + 惊艳增强版 + 3 个变体 + 平台适配版」，独有把还原同款升级为电影感/胶片感/商业大片的「惊艳增强层」" },
+                  { text: "66 star" },
+                  { text: "比上一条多一层「不止还原、还要变好看」" }
+                ]}
+              ]},
+              { text: "通用优化类", children: [
+                { text: "Prompt Master（nidhinjs）", children: [
+                  { text: "把一句粗糙想法变成针对目标工具的成品提示词——自动识别目标工具（Claude、ChatGPT、Midjourney、SD、ComfyUI、Sora、Runway 等 30+），提取 9 维意图、套用对应框架、做 token 精简审计" },
+                  { text: "16,088 star，本组最高" },
+                  { text: "一个技能同时覆盖文本、图像、视频提示词，压轴推荐" }
+                ]},
+                { text: "提示词炼金术 Prompt Alchemist（Cherish133）", children: [
+                  { text: "中文提示词优化——粘贴原始 Prompt，按「诊断→结构→思考→压缩」四步输出蒸馏版，内置 18 个反模式防御和多模型适配（GPT/Claude/Gemini/DeepSeek/Kimi 等）" },
+                  { text: "注意信号分裂：GitHub 仅 15 star，但在 SkillHub 上下载量达 15,080 次、仍在更新；先当扩展阅读，两个口径都看过再判断" }
+                ]}
+              ]},
+              { text: "附：模板库与观察名单", children: [
+                { text: "Awesome Seedance 2.0 Prompts（YouMind-OpenLab）", children: [
+                  { text: "提示词模板库，不是 Skill，不能装进 Agent。2,000+ 条精选 Seedance 2.0 提示词（电影、动漫、UGC、广告等），附角色一致性技巧，可在线画廊浏览复制" },
+                  { text: "2,229 star" },
+                  { text: "当「抄作业」素材库用：先模仿现成好提示词，再理解结构" }
+                ]},
+                { text: "Seedance 2.5 Prompt Skill（jutsuhq）", children: [
+                  { text: "针对最新 Seedance 2.5，含 @Image 映射表和失败修复表，写得很专业" },
+                  { text: "2 star；仓库 2026-10-20 才创建、热度极低" },
+                  { text: "列入观察名单，先别依赖" }
+                ]}
+              ]}
+            ]},
+            { text: "动手任务", children: [
+              { text: "把「一个女孩在海边看日落」按公式扩写成完整 Prompt 出图，再只改光影一项出一张对比；进阶：把同一句想法喂给任意一个上面的 Skill，对比它写的和你手写的差在哪" }
+            ]},
+            { text: "过关标准", children: [
+              { text: "同一条 Prompt 连出 3 次，画面主体、构图、氛围基本稳定" },
+              { text: "能指出一条失败 Prompt 具体是哪部分没写清" }
+            ]}
+          ]},
+          { text: "导演语言 → Prompt 翻译", color: "#5f3dc4", children: [
+            { text: "学什么", children: [
+              { text: "传统影视里想的镜头，和 Prompt 里写的词，是一一对应的翻译关系——这一支把第 4 支的词库变成条件反射" }
+            ]},
+            { text: "翻译对照表", children: [
+              { text: "缓慢推近的特写 →", children: [
+                { text: "close-up, slow push-in, 主体描述, 光影描述" },
+                { text: "景别 + 运镜 + 主体 + 光影一次写全" }
+              ]},
+              { text: "仰拍全景，人物很小 →", children: [
+                { text: "extreme wide shot, low angle, a lone figure on..." },
+                { text: "角度词放前面，模型先定构图再填细节" }
+              ]},
+              { text: "手持跟随，有呼吸感 →", children: [
+                { text: "handheld tracking shot, slight camera shake, following from behind" },
+                { text: "「手持晃动」写进运镜，别只写「真实感」" }
+              ]},
+              { text: "黄昏逆光，半脸暖半脸冷 →", children: [
+                { text: "backlit at dusk, warm rim light on one side, cool shadow on the other, cinematic" },
+                { text: "光影决定氛围，别用「好看」「高级」这种空词" }
+              ]},
+              { text: "情绪：克制地难过 →", children: [
+                { text: "restrained sorrow, eyes downcast, lips pressed, no tears" },
+                { text: "情绪拆成表情和肢体，别只写情绪名" }
+              ]},
+              { text: "同一个人出现在每个镜头里 →", children: [
+                { text: "不靠文字——靠定妆图 + 参考图（第 6 支）" },
+                { text: "长相只在定妆图里定死，后面只改动作场景" }
+              ]}
+            ]},
+            { text: "工作方法：分镜表", children: [
+              { text: "镜号 / 景别 / 画面内容 / 运镜 / 时长" },
+              { text: "一行 = 一次生成任务，做完一行勾一行" }
+            ]},
+            { text: "动手任务", children: [
+              { text: "把「女孩收到一封信，拆开，脸色变了」拆成 3 个镜头的分镜表，再逐镜写出 Prompt 并各生成一条" }
+            ]},
+            { text: "过关标准", children: [
+              { text: "拿到一段文字剧情，10 分钟内拆出分镜表并写完每镜的 Prompt" }
+            ]}
+          ]},
+          { text: "一致性", color: "#0b7285", children: [
+            { text: "学什么", children: [
+              { text: "解决 AIGC 最大的痛点——每个镜头里主角都长得不一样，这是小白和高手的分水岭" }
+            ]},
+            { text: "先理解为什么难", children: [
+              { text: "模型每生成一次，都是「重新画一个人」" },
+              { text: "文字描述得再细，两次画出来的脸也不会完全相同" },
+              { text: "一致性不能靠文字，必须靠图像锚点" }
+            ]},
+            { text: "三级打法（从易到难）", children: [
+              { text: "一级 · 定妆图", children: [
+                { text: "先专门生成一张主角的标准像：正面、光线均匀、表情中性" },
+                { text: "定死长相、发型、服装——全片的「身份证」，后面所有镜头都引用它" }
+              ]},
+              { text: "二级 · 参考图打法", children: [
+                { text: "把定妆图作为参考图 / 首帧喂给模型（各平台叫法：参考生图、主体参考、@引用、全能参考）" },
+                { text: "镜头里只写动作和场景，不要再重新描述长相" }
+              ]},
+              { text: "三级 · LoRA", children: [
+                { text: "把角色的 10–30 张图训练成专属 LoRA（Liblib 可在线训，ComfyUI 可本地训）" },
+                { text: "权重常用 0.6–0.8，太高会僵硬、太低会飘" },
+                { text: "适合长篇、系列账号" }
+              ]}
+            ]},
+            { text: "场景与风格一致", children: [
+              { text: "同一场景反复出现，先定一张「场景定妆图」同样引用" },
+              { text: "全片统一风格词和色调词（如固定加「冷色调、青橙色调」）" },
+              { text: "尽量用同一个模型生成全片，不要中途换模型" }
+            ]},
+            { text: "检查习惯", children: [
+              { text: "每生成一个新镜头，先和定妆图并排比脸、比服装、比发型" },
+              { text: "不对就重抽，别攒到剪辑时才发现全片四张脸" }
+            ]},
+            { text: "动手任务", children: [
+              { text: "做一张定妆图，再用参考图打法生成 3 个不同景别 / 动作的镜头（特写、中景、背影转身），检查是不是同一个人" }
+            ]},
+            { text: "过关标准", children: [
+              { text: "3 个镜头并排，任何人一眼能认出是同一个角色，服装发型无明显变化" }
+            ]}
+          ]},
+          { text: "完整制作流程", color: "#e67700", children: [
+            { text: "学什么", children: [
+              { text: "把前面所有技能串成一条流水线——这条线走通，你就正式「会做 AIGC」了" }
+            ]},
+            { text: "九步流程", children: [
+              { text: "1 · 脚本", children: [
+                { text: "一句话故事 → 分段台词 / 旁白" },
+                { text: "检查：时长估算对不对（1 分钟约 150–180 字台词）" }
+              ]},
+              { text: "2 · 分镜表", children: [
+                { text: "逐镜写景别、画面、运镜、时长（第 5 支的方法）" },
+                { text: "检查：镜头衔接讲得通故事吗" }
+              ]},
+              { text: "3 · 定妆", children: [
+                { text: "角色定妆图 + 场景定妆图（第 6 支）" },
+                { text: "检查：长相服装定死了吗" }
+              ]},
+              { text: "4 · 逐镜生成", children: [
+                { text: "按分镜表一行一行生成（第 3 支选方式、第 4 支写 Prompt）" },
+                { text: "检查：每镜和定妆比过脸了吗" }
+              ]},
+              { text: "5 · 粗剪", children: [
+                { text: "剪映等工具按分镜顺序拼起来，先不调色不管声音" },
+                { text: "检查：故事讲通顺了吗？节奏哪里拖？" }
+              ]},
+              { text: "6 · 声音", children: [
+                { text: "先判断模型原生音画够不够，不够再后期补配音 / 对口型、BGM、音效（展开见下方「声音怎么做」）" },
+                { text: "产出：带声轨版" }
+              ]},
+              { text: "7 · 字幕", children: [
+                { text: "自动识别字幕后逐字校对（人名、术语最容易错）" },
+                { text: "产出：带字幕版" }
+              ]},
+              { text: "8 · 导出", children: [
+                { text: "分辨率、画幅、编码按发布平台要求（发抖音 / B 站多为 1080p 竖屏或横屏）" },
+                { text: "检查：手机上完整播一遍" }
+              ]},
+              { text: "9 · 发布", children: [
+                { text: "标题、封面、AI 内容标识（平台要求标注的必须标，见第 9 支）" }
+              ]}
+            ]},
+            { text: "声音怎么做", children: [
+              { text: "先分清两类声音", children: [
+                { text: "模型原生音画：Seedance 2.0 起、MiniMax H3 等生成视频时自带环境音、音效甚至人声；空镜、氛围镜头先试原生的，够用就省掉整个后期配音环节" },
+                { text: "必须后期补的四件事：指定台词的配音、同一角色全片音色统一、精确对口型、BGM 的风格定制——这四件原生声音还靠不住，按下面三条线补" }
+              ]},
+              { text: "配音（TTS）", children: [
+                { text: "开源工具", children: [
+                  { text: "入门先用平台自带：即梦数字人、小云雀口播" },
+                  { text: "IndexTTS（Bilibili 开源）：情感表现强，支持音色克隆" },
+                  { text: "GPT-SoVITS：少量录音就能克隆音色，社区教程最多" },
+                  { text: "VoxCPM2（清华 / OpenBMB）：不用参考音频、文字描述就能「设计」出一个新音色，也能可控克隆，Apache-2.0 可商用" },
+                  { text: "VoiceStudio（原 OmniVoice-Studio）：本地桌面语音工作站，把十几种引擎装进一个界面切换，不想逐个装环境时用它" },
+                  { text: "Breeze TTS 2（BreezeBlue）：音色设计和语气指导强，但开源权重是非商用许可，接活前先看授权" }
+                ]},
+                { text: "商业服务", children: [
+                  { text: "Fish Audio、ElevenLabs、MiniMax：不想折腾部署、要稳定出活时用，按量付费" },
+                  { text: "同一角色全片固定同一个工具、同一个音色和参数" },
+                  { text: "音色克隆只用本人或已授权的声音（第 9 支）" }
+                ]}
+              ]},
+              { text: "对口型", children: [
+                { text: "图 + 台词（选音色）或图 + 现成音频 → 人物开口说话" },
+                { text: "即梦、小云雀、LibTV 都有现成功能" },
+                { text: "要点：正脸、嘴部无遮挡、音频干净、长台词拆成短句逐段生成" }
+              ]},
+              { text: "音乐", children: [
+                { text: "Suno 为主：写风格描述生成 BGM，要带歌词的把歌词分段填" },
+                { text: "原则：BGM 是托底的，音量压在人声之下，一首贯穿全片，别一镜一首" },
+                { text: "音效与环境音：原生生成 / 素材库 / 后期合成，新手先掌握人声 + BGM 两轨" }
+              ]},
+              { text: "小练习", children: [
+                { text: "拿一条无声视频，配上「原生音画版」和「后期配音版」各一条，对比哪种更贴画面、成本差多少" }
+              ]}
+            ]},
+            { text: "文件管理（务必养成）", children: [
+              { text: "一个项目一个文件夹：脚本 / 分镜 / 定妆 / 镜头 / 成片 分子文件夹" },
+              { text: "文件名带镜号和版本，如 镜03-桥上回头-v2，不要用「最终版」「真的最终版」" },
+              { text: "满意的 Prompt 随手记进分镜表备注列（用 SD 工具时连 Seed 一起记）——这是你最值钱的资产" }
+            ]},
+            { text: "动手任务", children: [
+              { text: "完整走一遍九步，做一条 30 秒短片（题材自选），全程用上面的文件夹和命名规范" }
+            ]},
+            { text: "过关标准", children: [
+              { text: "独立交付一条有脚本、有分镜、角色一致、有声音字幕的 30 秒成片" }
+            ]}
+          ]},
+          { text: "翻车排查", color: "#d6336c", children: [
+            { text: "学什么", children: [
+              { text: "生成结果不对时，能判断是哪一类问题、用哪一招解——这一支不用提前背，遇到问题回来查" }
+            ]},
+            { text: "症状对照表", children: [
+              { text: "脸崩、五官扭曲", children: [
+                { text: "原因：景别太远脸太小；一次塞太多动作" },
+                { text: "解法：脸部特写单独生成再合成；减小景别复杂度；用局部重绘修脸" }
+              ]},
+              { text: "多手指、手部畸形", children: [
+                { text: "原因：手是模型的老大难" },
+                { text: "解法：让手出镜少、藏袖口 / 道具后；局部重绘单独修手；换姿势参考（ControlNet）" }
+              ]},
+              { text: "人物每个镜头换脸", children: [
+                { text: "原因：没用定妆 / 参考（第 6 支）" },
+                { text: "解法：回第 6 支三级打法，不要靠改文字" }
+              ]},
+              { text: "提示词不听话", children: [
+                { text: "原因：抽象词太多；一句话塞了互相打架的要求" },
+                { text: "解法：抽象词翻译成具体描述；拆成两个镜头分别实现" }
+              ]},
+              { text: "动作僵硬 / 飘移", children: [
+                { text: "原因：单镜动作太多、太复杂" },
+                { text: "解法：一个镜头只写一个主要动作；复杂动作拆镜或用动作迁移" }
+              ]},
+              { text: "文字乱码（图里招牌、字幕）", children: [
+                { text: "原因：模型不擅长长文字" },
+                { text: "解法：图内文字后期用设计工具加；短词组比长句成功率高；即梦 / Seedream 中文相对强" }
+              ]},
+              { text: "画面闪烁、变形", children: [
+                { text: "原因：时长太长、运动幅度太大" },
+                { text: "解法：缩短单镜时长；降低运镜幅度；用首尾帧锁两端" }
+              ]},
+              { text: "素材被审核拦截", children: [
+                { text: "原因：写实真人脸、敏感词、他人肖像" },
+                { text: "解法：换非真人素材；改写敏感表述；只用自有 / 授权素材（第 9 支）" }
+              ]},
+              { text: "积分烧太快", children: [
+                { text: "原因：上来就高清长时长批量抽" },
+                { text: "解法：低清短版试方向（或 TapNow 的 Draft 模式），定稿再出正式版" }
+              ]}
+            ]},
+            { text: "通用原则", children: [
+              { text: "先降复杂度（拆镜头、减动作、缩时长），再换工具（换模型 / 换平台），最后才怀疑别的问题" },
+              { text: "多数「模型不行」其实是任务给得太满" }
+            ]},
+            { text: "动手任务", children: [
+              { text: "翻出之前生成废掉的任意 3 条素材，对照上表各写一句「病因 + 药方」" }
+            ]},
+            { text: "过关标准", children: [
+              { text: "遇到一条失败生成，能先说出它属于哪类问题、打算用哪招，而不是无脑重抽" }
+            ]}
+          ]},
+          { text: "合规与版权", color: "#364fc7", children: [
+            { text: "学什么", children: [
+              { text: "哪些素材能用、哪些不能碰，避免作品下架甚至惹上纠纷" }
+            ]},
+            { text: "六条红线", children: [
+              { text: "肖像权", children: [
+                { text: "真人照片 / 视频做生成、换脸、角色替换，只用本人或拿到明确授权的素材；名人脸更不能碰" },
+                { text: "部分平台（如即梦）会直接拦截写实真人素材" }
+              ]},
+              { text: "IP 与形象", children: [
+                { text: "动漫角色、品牌 Logo、他人作品风格——学习练习和商用是两回事，商用前逐项确认授权" },
+                { text: "Liblib 等社区模型的授权看每个作者的说明，不能默认可商用" }
+              ]},
+              { text: "声音克隆", children: [
+                { text: "只克隆自己或已授权的声音" }
+              ]},
+              { text: "平台会员与商用授权", children: [
+                { text: "免费版通常不带商用授权（如 Lovart 免费版）" },
+                { text: "接活前先确认当前套餐的授权范围和水印规则" }
+              ]},
+              { text: "AI 内容标识", children: [
+                { text: "国内规定 AI 生成内容要带标识，各平台导出多自带或要求声明" },
+                { text: "发布时按平台要求标注，不要删改标识" }
+              ]},
+              { text: "音乐版权", children: [
+                { text: "AI 生成的 BGM 相对安全" },
+                { text: "直接搬运现成歌曲做商用要另行授权" }
+              ]}
+            ]},
+            { text: "动手任务", children: [
+              { text: "给手头项目逐项列清：人物素材来源、模型授权、发布要标什么" }
+            ]},
+            { text: "过关标准", children: [
+              { text: "能对每个项目说清：人物素材哪来的、模型授权是什么、发布要标什么" }
+            ]}
+          ]},
+          { text: "学习路径：四周计划", color: "#6741d9", children: [
+            { text: "学什么", children: [
+              { text: "把前面 9 支排成可执行的四周节奏，并知道学完往哪走" }
+            ]},
+            { text: "四周计划", children: [
+              { text: "第 1 周（第 1–3 支）", children: [
+                { text: "产出：3 条不同生成方式的小视频（T2V、I+T2V、首尾帧各一条）" }
+              ]},
+              { text: "第 2 周（第 4–6 支）", children: [
+                { text: "产出：一个角色的定妆图 + 同角色 3 镜头小片段，一致性过关" }
+              ]},
+              { text: "第 3 周（第 7 支）", children: [
+                { text: "产出：一条完整的 30 秒短片（有声音、有字幕、走了九步流程）" }
+              ]},
+              { text: "第 4 周（第 8–9 支 + 复盘）", children: [
+                { text: "产出：把第 3 周的片子按翻车表逐条挑毛病、重做一版 v2" },
+                { text: "并写一页复盘：哪镜抽了多少次、钱花在哪" }
+              ]}
+            ]},
+            { text: "拆解练习（贯穿全程）", children: [
+              { text: "每周挑一条喜欢的 AI 短片，按四层逆向拆解：分镜、提示词、一致性、后期" },
+              { text: "拆 5 条，胜过自己闷头抽 50 条" }
+            ]},
+            { text: "进阶方向", children: [
+              { text: "工作流：ComfyUI 深入（ControlNet 全家桶、批量自动化）/ RunningHub 高阶工作流" },
+              { text: "短剧方向：小云雀短剧 Agent、LibTV 全流程量产" },
+              { text: "电商方向：Lovart 整套物料、TapNow 产品视频流水线" },
+              { text: "账号方向：选一个赛道，用第 7 支流程周更，靠产量和复盘涨手感" }
+            ]},
+            { text: "动手任务", children: [
+              { text: "按四周计划排好日程，先完成第 1 周的 3 条视频" }
+            ]},
+            { text: "过关标准（结业）", children: [
+              { text: "独立完成一条 1 分钟短片，并能完整讲清自己的制作流程——讲得清，才算真的学会" }
+            ]}
+          ]}
+        ]
+      };
+      /* ================= 建树 ================= */
+      var nodesBox = document.getElementById("nodes");
+      var svg = document.getElementById("edges");
+      /* 测量容器：挂在 body 下、宽度已知，避免被 #world 的收缩宽度影响测量 */
+      var measurer = document.createElement("div");
+      measurer.style.cssText = "position:absolute;left:-10000px;top:0;width:2400px;visibility:hidden;pointer-events:none;";
+      document.body.appendChild(measurer);
+      var all = [];
+      var uid = 0;
+
+      function build(data, parent, depth) {
+        var n = {
+          id: uid++, data: data, parent: parent, depth: depth,
+          children: [], collapsed: false,
+          color: depth === 1 ? data.color : (parent ? parent.color : "#333"),
+          side: 0, w: 0, h: 0,
+          x: 0, y: 0, cx: 0, cy: 0, opacity: 0, shown: false,
+          tx: 0, ty: 0, fromX: 0, fromY: 0, fromO: 0
+        };
+        var el = document.createElement("div");
+        el.className = "node " + (depth === 0 ? "root" : "d" + Math.min(depth, 3)) + (depth > 0 && data.children && data.children.length ? " has-kids" : "");
+        el.style.setProperty("--c", n.color);
+        el.style.position = "absolute";
+        el.style.left = "0px"; el.style.top = "0px";
+        el.style.visibility = "hidden";
+
+        var txt = document.createElement("span");
+        txt.className = "txt";
+        if (depth === 0) {
+          txt.innerHTML = "";
+          txt.appendChild(document.createTextNode(data.text));
+          var sub = document.createElement("span");
+          sub.className = "sub";
+          sub.textContent = data.sub || "";
+          txt.appendChild(sub);
+        } else {
+          txt.textContent = data.text;
+          if (data.tag) {
+            var tag = document.createElement("span");
+            tag.className = "tag";
+            tag.textContent = data.tag;
+            txt.appendChild(tag);
+          }
+        }
+        if (depth === 1) {
+          var num = document.createElement("span");
+          num.className = "num";
+          num.textContent = String(parent.children.length + 1);
+          el.appendChild(num);
+        }
+        el.appendChild(txt);
+        if (depth > 0 && data.children && data.children.length) {
+          var tg = document.createElement("span");
+          tg.className = "toggle";
+          tg.textContent = "＋";
+          el.appendChild(tg);
+          n.toggleEl = tg;
+        }
+        el.addEventListener("click", function (ev) {
+          if (suppressClick) return;
+          if (n.depth > 0 && n.children.length) {
+            n.collapsed = !n.collapsed;
+            layout(true);
+          }
+          ev.stopPropagation();
+        });
+        if (depth > 0 && data.children && data.children.length) {
+          el.tabIndex = 0;
+          el.setAttribute("role", "button");
+          el.setAttribute("aria-expanded", "true");
+          el.addEventListener("keydown", function (ev) {
+            if (ev.key === "Enter" || ev.key === " ") {
+              ev.preventDefault();
+              n.collapsed = !n.collapsed;
+              layout(true);
+            }
+          });
+        }
+        n.el = el;
+        el.__node = n;
+        measurer.appendChild(el);
+        all.push(n);
+        if (parent) parent.children.push(n);
+        (data.children || []).forEach(function (c) { build(c, n, depth + 1); });
+        return n;
+      }
+
+      var root = build(DATA, null, 0);
+      root.children.forEach(function (b, i) { b.side = (i % 2 === 0) ? 1 : -1; });
+      /* 从每个分支往下传播 side（不能从 root 传播，root.side=0 会覆盖分支的 ±1） */
+      root.children.forEach(function (b) {
+        (function setSide(n) {
+          n.children.forEach(function (c) { c.side = n.side; setSide(c); });
+        })(b);
+      });
+
+      /* 初始状态：只展开到二级——一级分支（depth 1）展开、其二级主题组可见，
+         深度 ≥2 的节点初始折叠，讲课时逐层点开；与工具栏「展开到二级」一致 */
+      all.forEach(function (n) { n.collapsed = n.depth >= 2; });
+
+      /* 在已知宽度的测量容器里量准尺寸，再把节点移进画布 */
+      function measureAll() {
+        all.forEach(function (n) { n.w = n.el.offsetWidth; n.h = n.el.offsetHeight; });
+      }
+      measureAll();
+      all.forEach(function (n) { nodesBox.appendChild(n.el); });
+      measurer.remove();
+
+      /* ================= 布局 ================= */
+      var HGAP = 46, VGAP = 13, PAD = 60;
+      var bbox = { x: 0, y: 0, w: 0, h: 0 };
+
+      function visible(n) {
+        var p = n.parent;
+        while (p) { if (p.collapsed) return false; p = p.parent; }
+        return true;
+      }
+      function subH(n) {
+        if (!n.children.length || n.collapsed) return n.h;
+        var s = 0;
+        n.children.forEach(function (c, i) { s += subH(c) + (i ? VGAP : 0); });
+        return Math.max(n.h, s);
+      }
+      function place(n, edgeX, cy) {
+        n.x = n.side >= 0 ? edgeX : edgeX - n.w;
+        n.y = cy - n.h / 2;
+        if (n.children.length && !n.collapsed) {
+          var total = 0;
+          n.children.forEach(function (c, i) { total += subH(c) + (i ? VGAP : 0); });
+          var y = cy - total / 2;
+          n.children.forEach(function (c) {
+            var h = subH(c);
+            var childEdge = n.side >= 0 ? n.x + n.w + HGAP : n.x - HGAP;
+            place(c, childEdge, y + h / 2);
+            y += h + VGAP;
+          });
+        }
+      }
+      function layout(animate) {
+        /* 每次布局前在画布内重测一遍节点尺寸：字体后加载、内嵌浏览器
+           字体度量不同都会让先前量到的宽高过期，间距随之算错、节点压叠 */
+        measureAll();
+        var fitNow = false;
+        if (!animate) {
+          if (animId) { cancelAnimationFrame(animId); animId = null; }
+          if (animTimer) { clearTimeout(animTimer); animTimer = null; }
+          if (fitPending) { fitPending = false; fitNow = true; }
+        }
+        /* 根节点居中，两侧分支各自堆叠 */
+        [1, -1].forEach(function (side) {
+          var bs = root.children.filter(function (b) { return b.side === side; });
+          var total = 0;
+          bs.forEach(function (b, i) { total += subH(b) + (i ? VGAP + 8 : 0); });
+          var y = -total / 2;
+          bs.forEach(function (b) {
+            var h = subH(b);
+            var edge = side > 0 ? root.w / 2 + HGAP : -root.w / 2 - HGAP;
+            place(b, edge, y + h / 2);
+            y += h + VGAP + 8;
+          });
+        });
+        root.x = -root.w / 2; root.y = -root.h / 2;
+
+        /* 计算包围盒并平移到正坐标 */
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        all.forEach(function (n) {
+          if (!visible(n)) return;
+          minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
+          maxX = Math.max(maxX, n.x + n.w); maxY = Math.max(maxY, n.y + n.h);
+        });
+        var dx = PAD - minX, dy = PAD - minY;
+        all.forEach(function (n) { n.tx = n.x + dx; n.ty = n.y + dy; });
+        bbox = { x: 0, y: 0, w: (maxX - minX) + PAD * 2, h: (maxY - minY) + PAD * 2 };
+        /* 给世界一个明确尺寸（含余量），保证节点在其中按内容自然宽度收缩适配，
+           否则 #world 宽度塌缩会把节点重新挤窄 */
+        world.style.width = (bbox.w + 600) + "px";
+        world.style.height = (bbox.h + 200) + "px";
+        svg.setAttribute("width", bbox.w);
+        svg.setAttribute("height", bbox.h);
+        svg.setAttribute("viewBox", "0 0 " + bbox.w + " " + bbox.h);
+
+        all.forEach(function (n) {
+          n.fromX = n.cx; n.fromY = n.cy; n.fromO = n.opacity;
+          if (visible(n)) {
+            if (!n.shown) {
+              var a = nearestShownAncestor(n);
+              n.fromX = a ? a.cx + a.w / 2 - n.w / 2 : n.tx;
+              n.fromY = a ? a.cy + a.h / 2 - n.h / 2 : n.ty;
+              n.fromO = 0;
+            }
+          } else if (n.shown) {
+            var anc = nearestShownAncestor(n);
+            if (anc) { n.tx = anc.tx + anc.w / 2 - n.w / 2; n.ty = anc.ty + anc.h / 2 - n.h / 2; }
+          }
+          if (n.toggleEl) n.toggleEl.textContent = n.collapsed ? "＋" : "−";
+          if (n.depth > 0 && n.children.length) n.el.setAttribute("aria-expanded", String(!n.collapsed));
+        });
+
+        if (!animate) { finishLayout(1); if (fitNow) fitView(); return; }
+        startAnim();
+      }
+      function nearestShownAncestor(n) {
+        var p = n.parent;
+        while (p && !visible(p)) p = p.parent;
+        return p;
+      }
+
+      /* ---------- 动画 ---------- */
+      var animId = null, animStart = 0, animTimer = null, fitPending = false;
+      var ANIM_MS = 430;
+      function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+      function animDone() {
+        if (animTimer) { clearTimeout(animTimer); animTimer = null; }
+        if (fitPending) { fitPending = false; fitView(); }
+      }
+      /* 强制把进行中的动画落到最终位置 */
+      function completeAnim() {
+        if (animId) { cancelAnimationFrame(animId); animId = null; }
+        if (animTimer) { clearTimeout(animTimer); animTimer = null; }
+        finishLayout(1);
+        if (fitPending) { fitPending = false; fitView(); }
+      }
+      function startAnim() {
+        if (animId) cancelAnimationFrame(animId);
+        if (animTimer) clearTimeout(animTimer);
+        animStart = performance.now();
+        var step = function (now) {
+          var t = Math.min(1, (now - animStart) / ANIM_MS);
+          finishLayout(ease(t));
+          if (t < 1) animId = requestAnimationFrame(step);
+          else { animId = null; animDone(); }
+        };
+        animId = requestAnimationFrame(step);
+        /* 兜底：部分内嵌 WebView 会节流甚至暂停 requestAnimationFrame，
+           帧回调迟迟不来时节点会停在父节点中心挤成一摞；用定时器强制落位 */
+        animTimer = setTimeout(completeAnim, ANIM_MS + 160);
+      }
+      function finishLayout(t) {
+        all.forEach(function (n) {
+          var vis = visible(n);
+          var targetO = vis ? 1 : 0;
+          n.cx = n.fromX + (n.tx - n.fromX) * t;
+          n.cy = n.fromY + (n.ty - n.fromY) * t;
+          n.opacity = n.fromO + (targetO - n.fromO) * t;
+          n.shown = n.opacity > 0.01;
+          n.el.style.visibility = n.shown ? "visible" : "hidden";
+          n.el.style.left = n.cx + "px";
+          n.el.style.top = n.cy + "px";
+          n.el.style.opacity = n.opacity.toFixed(3);
+        });
+        drawEdges();
+      }
+      function drawEdges() {
+        var s = "";
+        all.forEach(function (n) {
+          if (!n.parent || !n.shown || !n.parent.shown) return;
+          var p = n.parent;
+          var x1 = n.side >= 0 ? p.cx + p.w : p.cx;
+          var y1 = p.cy + p.h / 2;
+          var x2 = n.side >= 0 ? n.cx : n.cx + n.w;
+          var y2 = n.cy + n.h / 2;
+          var bend = Math.max(26, Math.abs(x2 - x1) * 0.45);
+          var c1 = n.side >= 0 ? x1 + bend : x1 - bend;
+          var c2 = n.side >= 0 ? x2 - bend : x2 + bend;
+          var wdt = n.depth === 1 ? 5 : (n.depth === 2 ? 3.4 : 2.4);
+          var op = Math.min(n.opacity, p.opacity);
+          s += '<path d="M' + x1.toFixed(1) + ' ' + y1.toFixed(1) +
+               ' C' + c1.toFixed(1) + ' ' + y1.toFixed(1) + ', ' + c2.toFixed(1) + ' ' + y2.toFixed(1) + ', ' + x2.toFixed(1) + ' ' + y2.toFixed(1) +
+               '" stroke="' + n.color + '" stroke-width="' + wdt + '" opacity="' + (op * 0.96).toFixed(2) + '"/>';
+        });
+        svg.innerHTML = s;
+      }
+
+      /* ================= 平移 / 缩放 ================= */
+      var viewport = document.getElementById("viewport");
+      var world = document.getElementById("world");
+      var view = { tx: 0, ty: 0, k: 1 };
+      var zoomLabel = document.getElementById("zoomLabel");
+
+      function applyView() {
+        world.style.transform = "translate(" + view.tx + "px," + view.ty + "px) scale(" + view.k + ")";
+        zoomLabel.textContent = Math.round(view.k * 100) + "%";
+      }
+      function fitView() {
+        var vw = viewport.clientWidth, vh = viewport.clientHeight;
+        var k = Math.min(vw / bbox.w, vh / bbox.h, 1.15);
+        view.k = Math.max(k, 0.05);
+        view.tx = (vw - bbox.w * view.k) / 2;
+        view.ty = (vh - bbox.h * view.k) / 2;
+        applyView();
+      }
+      function zoomAt(mx, my, factor) {
+        var k2 = Math.min(2.6, Math.max(0.12, view.k * factor));
+        var r = k2 / view.k;
+        view.tx = mx - (mx - view.tx) * r;
+        view.ty = my - (my - view.ty) * r;
+        view.k = k2;
+        applyView();
+      }
+
+      var pointers = new Map();
+      var dragMoved = 0, suppressClick = false;
+      var pinchD0 = 0, pinchK0 = 1;
+      var tapNode = null, captured = false, userTouched = false;
+
+      function nodeFromEvent(e) {
+        var t = e.target;
+        if (!t || !t.closest) return null;
+        var el = t.closest(".node");
+        return el && el.__node ? el.__node : null;
+      }
+
+      viewport.addEventListener("pointerdown", function (e) {
+        /* 不要一按下就 setPointerCapture：它会把随后的 click 改投给画布，
+           节点自己的点击监听永远收不到，点 ＋/− 毫无反应。
+           改为拖动超过阈值后才捕获，点按在 pointerup 里直接处理。 */
+        if (animId || animTimer) completeAnim();
+        userTouched = true;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        dragMoved = 0;
+        tapNode = pointers.size === 1 ? nodeFromEvent(e) : null;
+        if (pointers.size === 2) {
+          tapNode = null;
+          var pts = Array.from(pointers.values());
+          pinchD0 = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+          pinchK0 = view.k;
+        }
+        viewport.classList.add("dragging");
+      });
+      viewport.addEventListener("pointermove", function (e) {
+        if (!pointers.has(e.pointerId)) return;
+        var prev = pointers.get(e.pointerId);
+        var dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 1) {
+          dragMoved += Math.abs(dx) + Math.abs(dy);
+          if (dragMoved > 6) {
+            tapNode = null;
+            if (!captured) {
+              captured = true;
+              try { viewport.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+            }
+            view.tx += dx; view.ty += dy;
+            applyView();
+          }
+        } else if (pointers.size === 2) {
+          var pts = Array.from(pointers.values());
+          var d = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+          var rect = viewport.getBoundingClientRect();
+          var mx = (pts[0].x + pts[1].x) / 2 - rect.left;
+          var my = (pts[0].y + pts[1].y) / 2 - rect.top;
+          var target = pinchK0 * (d / Math.max(pinchD0, 1));
+          zoomAt(mx, my, target / view.k);
+          dragMoved += 10;
+        }
+      });
+      function endPointer(e) {
+        var wasTap = pointers.size === 1 && dragMoved <= 6 && tapNode;
+        pointers.delete(e.pointerId);
+        if (pointers.size === 0) {
+          viewport.classList.remove("dragging");
+          captured = false;
+          if (dragMoved > 6) {
+            suppressClick = true;
+            setTimeout(function () { suppressClick = false; }, 80);
+          } else if (wasTap) {
+            /* 点按节点：直接切换展开/折叠，并吞掉随后可能派发到节点的 click，避免二次触发 */
+            var n = tapNode;
+            suppressClick = true;
+            setTimeout(function () { suppressClick = false; }, 150);
+            if (n.depth > 0 && n.children.length) {
+              n.collapsed = !n.collapsed;
+              layout(true);
+            }
+          }
+          tapNode = null;
+        }
+      }
+      viewport.addEventListener("pointerup", endPointer);
+      viewport.addEventListener("pointercancel", endPointer);
+      window.addEventListener("pointerup", endPointer);
+      window.addEventListener("pointercancel", endPointer);
+      viewport.addEventListener("wheel", function (e) {
+        e.preventDefault();
+        if (animId || animTimer) completeAnim();
+        userTouched = true;
+        var rect = viewport.getBoundingClientRect();
+        zoomAt(e.clientX - rect.left, e.clientY - rect.top, e.deltaY < 0 ? 1.12 : 0.89);
+      }, { passive: false });
+
+      /* ================= 工具栏 ================= */
+      function setCollapsedWhere(fn) {
+        all.forEach(function (n) { if (n.depth >= 1 && n.children.length) n.collapsed = fn(n); });
+        /* 展开/收起后自动重新适应屏幕：等动画落位时触发（动画完成回调
+           或兜底定时器都会处理），讲课时不用再多点一次 */
+        fitPending = true;
+        layout(true);
+      }
+      document.getElementById("btnAll").addEventListener("click", function () { setCollapsedWhere(function () { return false; }); });
+      document.getElementById("btnL2").addEventListener("click", function () { setCollapsedWhere(function (n) { return n.depth >= 2; }); });
+      document.getElementById("btnL1").addEventListener("click", function () { setCollapsedWhere(function (n) { return n.depth >= 1; }); });
+      document.getElementById("btnFit").addEventListener("click", fitView);
+      document.getElementById("btnIn").addEventListener("click", function () { zoomAt(viewport.clientWidth / 2, viewport.clientHeight / 2, 1.25); });
+      document.getElementById("btnOut").addEventListener("click", function () { zoomAt(viewport.clientWidth / 2, viewport.clientHeight / 2, 0.8); });
+      document.getElementById("btnFull").addEventListener("click", function () {
+        try {
+          if (document.fullscreenElement) document.exitFullscreen();
+          else document.documentElement.requestFullscreen();
+        } catch (err) { /* 沙盒环境可能不允许全屏，忽略 */ }
+      });
+      document.addEventListener("fullscreenchange", function () { setTimeout(fitView, 60); });
+
+      var resizeTimer = null;
+      window.addEventListener("resize", function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(fitView, 180);
+      });
+
+      /* ================= 启动 ================= */
+      layout(false);
+      fitView();
+
+      /* 字体是异步加载的（网络慢或被拦截时尤其明显）：启动测量若赶在
+         网页字体生效之前，量到的节点宽高与实际渲染不一致，连线端点
+         就会错位、看起来像没连上。字体就绪 / 页面 load 后各重测一次，
+         用正确的宽高重排；用户已经手动操作过就不再抢着适应屏幕。 */
+      function remeasure() {
+        measureAll();
+        layout(false);
+        if (!userTouched) fitView();
+      }
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(remeasure);
+      }
+      window.addEventListener("load", remeasure);
+    })();
+    </script>
+  </body>
+</html>
